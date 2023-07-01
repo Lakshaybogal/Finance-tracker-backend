@@ -8,4 +8,5 @@ route.post('/login', getUser);
 route.get('/user/:id', getUserDetails);
 route.get('/transactions/:id', getTransaction);
 
+
 module.exports = route

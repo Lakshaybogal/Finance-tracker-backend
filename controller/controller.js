@@ -1,23 +1,26 @@
 const User = require('../module/ExpenseUser');
 const mongoose = require('mongoose');
 const bcryptjs = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+
+
 const addUser = async (req, res) => {
     try {
-        const { name, email, password,cPassword } = req.body;
-        const userExist = await User.findOne({email});
-        if(userExist)
-        {
-            return res.status(301).json({Error: 'User already exists'})
+        const { name, email, password, cPassword } = req.body;
+        const userExist = await User.findOne({ email });
+        if (userExist) {
+            return res.status(301).json({ Error: 'User already exists' })
         }
-        if(password === cPassword) {
+        if (password === cPassword) {
             const hashPwd = bcryptjs.hashSync(password);
             if (hashPwd) {
                 const user = await User.create({ name, email, password: hashPwd, balance: 0, earn: 0, spend: 0 });
-               return res.status(200).json(user);
+                return res.status(200).json(user);
             }
         }
-        return res.status(301).json({Error:"Passwords do not match"})
-       
+        return res.status(301).json({ Error: "Passwords do not match" })
+
     }
     catch (err) {
         res.status(401).json({
@@ -55,10 +58,10 @@ const earnTranscations = async (req, res) => {
 const spendTranscations = async (req, res) => {
     try {
         const { email, transactions } = req.body;
-        let { transactionName,transactionAmt } = transactions[0];
+        let { transactionName, transactionAmt } = transactions[0];
         transactionAmt = Math.abs(transactionAmt);
-        transactionAmt = transactionAmt*-1;
-        const user = await User.findOneAndUpdate({ email }, { $addToSet: { transactions : {transactionName,transactionAmt} } }, { new: true });
+        transactionAmt = transactionAmt * -1;
+        const user = await User.findOneAndUpdate({ email }, { $addToSet: { transactions: { transactionName, transactionAmt } } }, { new: true });
 
         if (!user) {
             return res.status(404).json({ Error: 'User not found' });
@@ -86,6 +89,7 @@ const getUser = async (req, res) => {
         if (!bcryptjs.compareSync(password, user.password)) {
             return res.status(404).json({ Error: "Incorrect password" });
         }
+
         res.status(200).json(user);
     }
     catch (err) {
@@ -129,4 +133,21 @@ const getUserDetails = async (req, res) => {
     }
 }
 
-module.exports = { addUser, earnTranscations, spendTranscations, getUserDetails, getUser, getTransaction }
+const editUser = async (req, res) => {
+    try {
+        const { id,newName } = req.body;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(404).json({ Error: "nothing found" });
+        }
+        await User.findByIdAndUpdate({ _id: id }, { name: newName }).then((data) => {
+            res.status(200).json(data);
+        });
+    }
+    catch (err) {
+        res.status(400).json({
+            Error: err.message
+        })
+    }
+}
+
+module.exports = { addUser, earnTranscations, spendTranscations, getUserDetails, getUser, getTransaction}
